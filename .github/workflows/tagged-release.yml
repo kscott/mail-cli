@@ -1,0 +1,38 @@
+name: Tagged Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release binary
+        run: swift build -c release --product mail-bin
+
+      - name: Rename binary
+        run: cp .build/release/mail-bin mail-bin
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: |
+            ## Install
+
+            1. Download `mail-bin` below
+            2. Move it to `~/bin/mail-bin` (create `~/bin` if needed)
+            3. Make it executable: `chmod +x ~/bin/mail-bin`
+            4. Run `mail setup` to store your Fastmail JMAP token
+
+            See the [README](https://github.com/kscott/mail-cli#readme) for full setup instructions.
+          files: mail-bin
+          make_latest: true
