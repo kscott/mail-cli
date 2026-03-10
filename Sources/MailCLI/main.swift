@@ -24,9 +24,7 @@ func usage() -> Never {
     Usage:
       mail setup [token]                   # Store JMAP token, discover identities
       mail send <to> [cc <cc>] [from <from>] [subject <subject>] [attach <file>] [body <text>] [--draft]
-      mail list [n]                        # Inbox, last N messages (default 10)
-      mail search <query>                  # Search all mail
-      mail show <subject>                  # Full message
+      mail search <query>                  # Search for context before composing
       mail open                            # Open Fastmail in browser
     """)
     exit(0)
@@ -514,41 +512,6 @@ func runSend(sendArgs: [String], contactStore: CNContactStore) async throws {
     print(summary)
 }
 
-func runList(n: Int, token: String, session: JMAPSession) async throws {
-    guard let inboxId = try await findMailboxId(role: "inbox", token: token, session: session) else {
-        throw MailError.jmapError("Could not find Inbox mailbox")
-    }
-
-    let responses = try await jmapPost(token: token, apiUrl: session.apiUrl, methodCalls: [
-        ["Email/query", [
-            "accountId": session.accountId,
-            "filter": ["inMailbox": inboxId],
-            "sort": [["property": "receivedAt", "isAscending": false]],
-            "limit": n,
-        ] as [String: Any], "a"],
-        ["Email/get", [
-            "accountId": session.accountId,
-            "#ids": ["resultOf": "a", "name": "Email/query", "path": "/ids"],
-            "properties": ["subject", "from", "receivedAt"],
-        ] as [String: Any], "b"],
-    ])
-
-    let emailResult = try methodResult(name: "Email/get", from: responses)
-    let emails      = emailResult["list"] as? [[String: Any]] ?? []
-
-    if emails.isEmpty { print("Inbox is empty."); return }
-
-    for (i, email) in emails.enumerated() {
-        let subject  = email["subject"]    as? String ?? "(no subject)"
-        let from     = (email["from"] as? [[String: Any]])?.first.map { formatAddr($0) } ?? ""
-        let received = email["receivedAt"] as? String ?? ""
-        let idx      = String(i + 1).leftPad(3)
-        let dateStr  = formatEmailDate(received).leftPad(8)
-        let fromStr  = String(from.prefix(24)).padding(toLength: 24, withPad: " ", startingAt: 0)
-        print("  \(idx)  \(dateStr)  \(fromStr)  \(subject)")
-    }
-}
-
 func runSearch(query: String, token: String, session: JMAPSession) async throws {
     let responses = try await jmapPost(token: token, apiUrl: session.apiUrl, methodCalls: [
         ["Email/query", [
@@ -578,63 +541,6 @@ func runSearch(query: String, token: String, session: JMAPSession) async throws 
         let fromStr  = String(from.prefix(24)).padding(toLength: 24, withPad: " ", startingAt: 0)
         print("  \(idx)  \(dateStr)  \(fromStr)  \(subject)")
     }
-}
-
-func runShow(query: String, token: String, session: JMAPSession) async throws {
-    // First: query for matching message IDs
-    let queryResponses = try await jmapPost(token: token, apiUrl: session.apiUrl, methodCalls: [
-        ["Email/query", [
-            "accountId": session.accountId,
-            "filter": ["text": query],
-            "sort": [["property": "receivedAt", "isAscending": false]],
-            "limit": 5,
-        ] as [String: Any], "a"]
-    ])
-    let queryResult = try methodResult(name: "Email/query", from: queryResponses)
-    let ids = queryResult["ids"] as? [String] ?? []
-    guard !ids.isEmpty else { throw MailError.notFound(query) }
-
-    if ids.count > 1 {
-        print("(\(ids.count) messages found — showing most recent)\n")
-    }
-
-    // Then: fetch full message
-    let getResponses = try await jmapPost(token: token, apiUrl: session.apiUrl, methodCalls: [
-        ["Email/get", [
-            "accountId": session.accountId,
-            "ids": [ids[0]],
-            "properties": ["subject", "from", "to", "cc", "receivedAt",
-                           "textBody", "bodyValues"],
-            "fetchTextBodyValues": true,
-            "maxBodyValueBytes": 65536,
-        ] as [String: Any], "a"]
-    ])
-    let getResult = try methodResult(name: "Email/get", from: getResponses)
-    let emails    = getResult["list"] as? [[String: Any]] ?? []
-    guard let email = emails.first else { throw MailError.notFound(query) }
-
-    let subject  = email["subject"]    as? String ?? "(no subject)"
-    let from     = (email["from"] as? [[String: Any]]).map { formatAddrs($0) } ?? ""
-    let to       = (email["to"]   as? [[String: Any]]).map { formatAddrs($0) } ?? ""
-    let cc       = (email["cc"]   as? [[String: Any]]).map { formatAddrs($0) }
-    let received = email["receivedAt"] as? String ?? ""
-
-    // Extract plain-text body
-    let bodyValues = email["bodyValues"] as? [String: [String: Any]] ?? [:]
-    var bodyText = ""
-    if let textParts = email["textBody"] as? [[String: Any]],
-       let partId    = textParts.first?["partId"] as? String,
-       let bv        = bodyValues[partId] {
-        bodyText = bv["value"] as? String ?? ""
-    }
-
-    print("From:    \(from)")
-    print("To:      \(to)")
-    if let cc, !cc.isEmpty { print("Cc:      \(cc)") }
-    print("Date:    \(formatEmailDateLong(received))")
-    print("Subject: \(subject)")
-    print()
-    print(bodyText.trimmingCharacters(in: .newlines))
 }
 
 // MARK: - String padding helper
@@ -682,25 +588,12 @@ Task {
             guard granted else { fail("Contacts access denied") }
             try await runSend(sendArgs: sendArgs, contactStore: store)
 
-        case "list":
-            let n       = args.count > 1 ? (Int(args[1]) ?? 10) : 10
-            let token   = try loadToken()
-            let session = try await fetchSession(token: token)
-            try await runList(n: n, token: token, session: session)
-
         case "search":
             guard args.count > 1 else { fail("provide a search query") }
             let query   = args.dropFirst().joined(separator: " ")
             let token   = try loadToken()
             let session = try await fetchSession(token: token)
             try await runSearch(query: query, token: token, session: session)
-
-        case "show":
-            guard args.count > 1 else { fail("provide a subject or query") }
-            let query   = args.dropFirst().joined(separator: " ")
-            let token   = try loadToken()
-            let session = try await fetchSession(token: token)
-            try await runShow(query: query, token: token, session: session)
 
         default:
             usage()

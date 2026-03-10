@@ -19,9 +19,7 @@ Requires macOS 14+.
 ```
 mail setup [token]                   # Store JMAP token, discover identities
 mail send <to> [keywords...]         # Send an email
-mail list [n]                        # Inbox, last N messages (default 10)
-mail search <query>                  # Search all mail
-mail show <subject>                  # Full message
+mail search <query>                  # Search for context before composing
 mail open                            # Open Fastmail in browser
 ```
 
