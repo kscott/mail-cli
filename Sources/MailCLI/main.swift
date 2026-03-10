@@ -172,10 +172,26 @@ struct JMAPSession {
     let accountId: String
 }
 
+/// URLSession delegate that preserves the Authorization header across redirects.
+private class AuthRedirectDelegate: NSObject, URLSessionTaskDelegate {
+    let token: String
+    init(token: String) { self.token = token }
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void) {
+        var r = request
+        r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        completionHandler(r)
+    }
+}
+
 func fetchSession(token: String) async throws -> JMAPSession {
     var req = URLRequest(url: URL(string: "https://api.fastmail.com/.well-known/jmap")!)
     req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-    let (data, _) = try await URLSession.shared.data(for: req)
+    let delegate = AuthRedirectDelegate(token: token)
+    let session  = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+    let (data, _) = try await session.data(for: req)
     guard let json          = try JSONSerialization.jsonObject(with: data) as? [String: Any],
           let apiUrl        = json["apiUrl"]        as? String,
           let uploadUrl     = json["uploadUrl"]     as? String,
