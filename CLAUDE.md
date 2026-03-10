@@ -27,7 +27,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for coding conventions and patterns.
 ```
 mail setup [token]   # Store JMAP token, discover identities (safe to re-run)
 mail send <to> [cc <cc>] [from <from>] [subject <subject>] [attach <file>] [body <text>] [--draft]
-mail search <query>  # Search for context before composing
+mail find <query>  # Find messages for context before composing
 mail open            # Open Fastmail in browser
 ```
 

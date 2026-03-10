@@ -1,6 +1,6 @@
 # mail-cli
 
-Fast CLI for Fastmail via JMAP. Send, list, search, and show email directly from the terminal.
+Fast CLI for Fastmail via JMAP. Send, find, and compose email directly from the terminal.
 
 ## Installation
 
@@ -18,7 +18,7 @@ Requires macOS 14+.
 ```
 mail setup [token]                   # Store JMAP token, discover identities
 mail send <to> [keywords...]         # Send an email
-mail search <query>                  # Search for context before composing
+mail find <query>                  # Find messages for context before composing
 mail open                            # Open Fastmail in browser
 ```
 

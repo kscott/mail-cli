@@ -24,7 +24,7 @@ func usage() -> Never {
     Usage:
       mail setup [token]                   # Store JMAP token, discover identities
       mail send <to> [cc <cc>] [from <from>] [subject <subject>] [attach <file>] [body <text>] [--draft]
-      mail search <query>                  # Search for context before composing
+      mail find <query>                    # Find messages for context before composing
       mail open                            # Open Fastmail in browser
     """)
     exit(0)
@@ -590,7 +590,7 @@ Task {
             guard granted else { fail("Contacts access denied") }
             try await runSend(sendArgs: sendArgs, contactStore: store)
 
-        case "search":
+        case "find":
             guard args.count > 1 else { fail("provide a search query") }
             let query   = args.dropFirst().joined(separator: " ")
             let token   = try loadToken()
