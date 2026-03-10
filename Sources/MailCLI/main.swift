@@ -254,7 +254,9 @@ func uploadAttachment(token: String, session: JMAPSession, path: String) async t
     req.setValue(mime, forHTTPHeaderField: "Content-Type")
     req.httpBody = data
 
-    let (respData, _) = try await URLSession.shared.data(for: req)
+    let delegate = AuthRedirectDelegate(token: token)
+    let uploadSession = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+    let (respData, _) = try await uploadSession.data(for: req)
     guard let json   = try JSONSerialization.jsonObject(with: respData) as? [String: Any],
           let blobId = json["blobId"] as? String else {
         throw MailError.jmapError("Upload failed for \(path)")
@@ -455,7 +457,8 @@ func runSend(sendArgs: [String], contactStore: CNContactStore) async throws {
     for path in msg.attachments {
         let up = try await uploadAttachment(token: token, session: session, path: path)
         attachmentObjects.append(["blobId": up.blobId, "name": up.name,
-                                  "type": up.type, "size": up.size])
+                                  "type": up.type, "size": up.size,
+                                  "disposition": "attachment"])
     }
 
     // Find Drafts mailbox
@@ -464,17 +467,30 @@ func runSend(sendArgs: [String], contactStore: CNContactStore) async throws {
     }
 
     // Build email create object
+    let bodyStructure: [String: Any]
+    if attachmentObjects.isEmpty {
+        bodyStructure = ["type": "text/plain", "partId": "1"]
+    } else {
+        var subParts: [[String: Any]] = [["type": "text/plain", "partId": "1"]]
+        subParts += attachmentObjects.map { a -> [String: Any] in
+            var p: [String: Any] = ["blobId": a["blobId"]!, "type": a["type"]!,
+                                    "disposition": "attachment"]
+            if let name = a["name"] { p["name"] = name }
+            return p
+        }
+        bodyStructure = ["type": "multipart/mixed", "subParts": subParts]
+    }
+
     var emailCreate: [String: Any] = [
         "mailboxIds":    [draftsId: true],
         "keywords":      ["$draft": true],
         "from":          [["name": identity.name, "email": identity.email]],
         "to":            toAddrs.map { ["name": $0.name, "email": $0.email] },
         "subject":       msg.subject,
-        "bodyStructure": ["type": "text/plain", "partId": "1"],
+        "bodyStructure": bodyStructure,
         "bodyValues":    ["1": ["value": bodyText]],
     ]
-    if !ccAddrs.isEmpty          { emailCreate["cc"]          = ccAddrs.map { ["name": $0.name, "email": $0.email] } }
-    if !attachmentObjects.isEmpty { emailCreate["attachments"] = attachmentObjects }
+    if !ccAddrs.isEmpty { emailCreate["cc"] = ccAddrs.map { ["name": $0.name, "email": $0.email] } }
 
     // Create the email
     let createResponses = try await jmapPost(
