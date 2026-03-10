@@ -1,0 +1,4 @@
+# Compiled binary — build locally with `./mail build`
+mail-bin
+.DS_Store
+.build/

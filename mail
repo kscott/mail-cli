@@ -1,0 +1,47 @@
+#!/bin/bash
+# mail — wrapper script for mail-bin
+#
+# Source lives at:  ~/dev/mail-cli/
+# Binary lives at:  ~/bin/mail-bin
+# Symlink at:       ~/bin/mail -> ~/dev/mail-cli/mail
+#
+# To set up on a new machine:
+#   ~/dev/mail-cli/mail setup
+#
+# To run tests:
+#   ~/dev/mail-cli/mail test
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+BINARY="$HOME/bin/mail-bin"
+SYMLINK="$HOME/bin/mail"
+
+if [[ "$1" == "setup" && "$2" == "--install" ]]; then
+  echo "Building $SCRIPT_DIR..."
+  swift build -c release --package-path "$SCRIPT_DIR" 2>&1 || { echo "Build failed."; exit 1; }
+  echo "Build OK."
+
+  cp "$SCRIPT_DIR/.build/release/mail-bin" "$BINARY" || { echo "Copy failed."; exit 1; }
+  echo "Installed binary to $BINARY."
+
+  echo "Creating symlink $SYMLINK -> $SCRIPT_DIR/mail..."
+  ln -sf "$SCRIPT_DIR/mail" "$SYMLINK" || { echo "Symlink failed."; exit 1; }
+  echo "Done. Run 'mail setup' to store your JMAP token."
+  exit 0
+fi
+
+if [[ "$1" == "build" ]]; then
+  echo "Building $SCRIPT_DIR..."
+  swift build -c release --package-path "$SCRIPT_DIR" 2>&1 || { echo "Build failed."; exit 1; }
+  cp "$SCRIPT_DIR/.build/release/mail-bin" "$BINARY" || { echo "Copy failed."; exit 1; }
+  echo "Installed to $BINARY."
+  exit 0
+fi
+
+if [[ "$1" == "test" ]]; then
+  swift build --package-path "$SCRIPT_DIR" 2>&1 || { echo "Build failed."; exit 1; }
+  BIN_PATH="$(swift build --package-path "$SCRIPT_DIR" --show-bin-path 2>/dev/null)"
+  "$BIN_PATH/mail-tests"
+  exit $?
+fi
+
+exec "$BINARY" "$@"
