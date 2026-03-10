@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 BINARY="$HOME/bin/mail-bin"
 SYMLINK="$HOME/bin/mail"
 
-if [[ "$1" == "setup" && "$2" == "--install" ]]; then
+if [[ "$1" == "setup" ]]; then
   echo "Building $SCRIPT_DIR..."
   swift build -c release --package-path "$SCRIPT_DIR" 2>&1 || { echo "Build failed."; exit 1; }
   echo "Build OK."
@@ -23,18 +23,8 @@ if [[ "$1" == "setup" && "$2" == "--install" ]]; then
   cp "$SCRIPT_DIR/.build/release/mail-bin" "$BINARY" || { echo "Copy failed."; exit 1; }
   echo "Installed binary to $BINARY."
 
-  echo "Creating symlink $SYMLINK -> $SCRIPT_DIR/mail..."
   ln -sf "$SCRIPT_DIR/mail" "$SYMLINK" || { echo "Symlink failed."; exit 1; }
-  echo "Done. Run 'mail setup' to store your JMAP token."
-  exit 0
-fi
-
-if [[ "$1" == "build" ]]; then
-  echo "Building $SCRIPT_DIR..."
-  swift build -c release --package-path "$SCRIPT_DIR" 2>&1 || { echo "Build failed."; exit 1; }
-  cp "$SCRIPT_DIR/.build/release/mail-bin" "$BINARY" || { echo "Copy failed."; exit 1; }
-  echo "Installed to $BINARY."
-  exit 0
+  exec "$BINARY" setup "${@:2}"
 fi
 
 if [[ "$1" == "test" ]]; then

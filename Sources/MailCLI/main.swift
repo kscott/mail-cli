@@ -357,6 +357,8 @@ func runSetup(tokenArg: String?) async throws {
     let token: String
     if let t = tokenArg {
         token = t
+    } else if let existing = try? loadToken() {
+        token = existing
     } else {
         print("Enter your Fastmail JMAP token: ", terminator: "")
         guard let t = readLine(strippingNewline: true), !t.isEmpty else {

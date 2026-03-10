@@ -6,8 +6,7 @@ Fast CLI for Fastmail via JMAP. Send, list, search, and show email directly from
 
 ```bash
 git clone https://github.com/kscott/mail-cli ~/dev/mail-cli
-~/dev/mail-cli/mail setup --install   # build, install binary, create symlink
-mail setup                             # store JMAP token, discover identities
+~/dev/mail-cli/mail setup   # build, install binary, configure token
 ```
 
 Get your JMAP token from Fastmail: Settings → Security → API tokens.
@@ -52,7 +51,7 @@ Keywords can appear in any order. `body` must be last — it captures to end of 
 ## Build & test
 
 ```bash
-./mail build   # build release binary and install to ~/bin
+./mail setup   # build release binary and install to ~/bin
 ./mail test    # build and run test suite (50 tests)
 ```
 

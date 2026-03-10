@@ -5,9 +5,8 @@ Swift CLI for Fastmail via JMAP.
 ## Build & run
 
 ```bash
-./mail build          # build release binary and install to ~/bin
-./mail test           # build and run test suite
-./mail setup --install  # full first-time install: build + symlink
+./mail setup   # build release binary, install to ~/bin, configure token
+./mail test    # build and run test suite
 ```
 
 ## Project structure
@@ -26,10 +25,10 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for coding conventions and patterns.
 ## Commands
 
 ```
-mail setup [token]                   # Store JMAP token, discover identities
+mail setup [token]   # Store JMAP token, discover identities (safe to re-run)
 mail send <to> [cc <cc>] [from <from>] [subject <subject>] [attach <file>] [body <text>] [--draft]
-mail search <query>                  # Search for context before composing
-mail open                            # Open Fastmail in browser
+mail search <query>  # Search for context before composing
+mail open            # Open Fastmail in browser
 ```
 
 ## send argument parsing
