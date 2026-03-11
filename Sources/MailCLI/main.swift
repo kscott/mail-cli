@@ -461,9 +461,12 @@ func runSend(sendArgs: [String], contactStore: CNContactStore) async throws {
                                   "disposition": "attachment"])
     }
 
-    // Find Drafts mailbox
+    // Find Drafts and Sent mailboxes
     guard let draftsId = try await findMailboxId(role: "drafts", token: token, session: session) else {
         throw MailError.jmapError("Could not find Drafts mailbox")
+    }
+    guard let sentId = try await findMailboxId(role: "sent", token: token, session: session) else {
+        throw MailError.jmapError("Could not find Sent mailbox")
     }
 
     // Build email create object
@@ -530,7 +533,11 @@ func runSend(sendArgs: [String], contactStore: CNContactStore) async throws {
                 "accountId": session.accountId,
                 "create": ["s1": ["emailId": emailId, "identityId": identity.id]],
                 "onSuccessUpdateEmail": [
-                    "#s1": ["keywords/$draft": NSNull()]
+                    "#s1": [
+                        "keywords/$draft":          NSNull(),
+                        "mailboxIds/\(draftsId)":   NSNull(),
+                        "mailboxIds/\(sentId)":     true,
+                    ]
                 ],
             ] as [String: Any], "0"]
         ]
