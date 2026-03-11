@@ -17,7 +17,46 @@ jobs:
       - name: Build release binary
         run: swift build -c release
 
-      - name: Rename binary
+      - name: Import Developer ID certificate
+        env:
+          P12_DATA: ${{ secrets.DEVELOPER_ID_P12 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+        run: |
+          KEYCHAIN=build.keychain
+          security create-keychain -p "" $KEYCHAIN
+          security default-keychain -s $KEYCHAIN
+          security unlock-keychain -p "" $KEYCHAIN
+          echo "$P12_DATA" | base64 --decode > /tmp/developer_id.p12
+          security import /tmp/developer_id.p12 -k $KEYCHAIN -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
+          rm /tmp/developer_id.p12
+
+      - name: Install intermediate certificate
+        run: |
+          curl -s -O https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          security import DeveloperIDG2CA.cer -k build.keychain
+
+      - name: Sign binary
+        run: |
+          codesign --force --sign "Developer ID Application: Kenneth Scott (6Q96Q79QN8)" \
+            --options runtime \
+            .build/release/mail-bin
+
+      - name: Notarize binary
+        env:
+          NOTARYTOOL_APPLE_ID: ${{ secrets.NOTARYTOOL_APPLE_ID }}
+          NOTARYTOOL_PASSWORD: ${{ secrets.NOTARYTOOL_PASSWORD }}
+          NOTARYTOOL_TEAM_ID: ${{ secrets.NOTARYTOOL_TEAM_ID }}
+        run: |
+          zip mail-bin.zip .build/release/mail-bin
+          xcrun notarytool submit mail-bin.zip \
+            --apple-id "$NOTARYTOOL_APPLE_ID" \
+            --password "$NOTARYTOOL_PASSWORD" \
+            --team-id "$NOTARYTOOL_TEAM_ID" \
+            --wait
+          xcrun stapler staple .build/release/mail-bin
+
+      - name: Copy binary
         run: cp .build/release/mail-bin mail-bin
 
       - name: Update rolling release
