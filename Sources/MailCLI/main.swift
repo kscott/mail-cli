@@ -4,29 +4,14 @@
 // Handles argument parsing, Keychain, JMAP, and Contacts interactions.
 // Matching and parsing logic delegated to MailLib for unit testing.
 
-import Darwin
 import Foundation
 import Contacts
 import Security
 import MailLib
-
-// MARK: - ANSI color
-
-private let ansiEnabled: Bool = {
-    ProcessInfo.processInfo.environment["NO_COLOR"] == nil &&
-    isatty(STDOUT_FILENO) != 0
-}()
-
-private func bold(_ s: String) -> String { ansiEnabled ? "\u{1B}[1m\(s)\u{1B}[0m" : s }
-private func dim(_ s: String)  -> String { ansiEnabled ? "\u{1B}[2m\(s)\u{1B}[0m" : s }
+import GetClearKit
 
 let version = "1.0.0"
 let args    = Array(CommandLine.arguments.dropFirst())
-
-func fail(_ msg: String) -> Never {
-    fputs("Error: \(msg)\n", stderr)
-    exit(1)
-}
 
 func usage() -> Never {
     print("""
@@ -590,10 +575,10 @@ func runSearch(query: String, token: String, session: JMAPSession) async throws 
         let subject  = email["subject"]    as? String ?? "(no subject)"
         let from     = (email["from"] as? [[String: Any]])?.first.map { formatAddr($0) } ?? ""
         let received = email["receivedAt"] as? String ?? ""
-        let idx      = dim(String(i + 1).leftPad(3))
-        let dateStr  = dim(formatEmailDate(received).leftPad(8))
-        let fromStr  = dim(String(from.prefix(24)).padding(toLength: 24, withPad: " ", startingAt: 0))
-        print("  \(idx)  \(dateStr)  \(fromStr)  \(bold(subject))")
+        let idx      = ANSI.dim(String(i + 1).leftPad(3))
+        let dateStr  = ANSI.dim(formatEmailDate(received).leftPad(8))
+        let fromStr  = ANSI.dim(String(from.prefix(24)).padding(toLength: 24, withPad: " ", startingAt: 0))
+        print("  \(idx)  \(dateStr)  \(fromStr)  \(ANSI.bold(subject))")
     }
 }
 
@@ -609,8 +594,8 @@ extension String {
 // MARK: - Dispatch
 
 guard let cmd = args.first else { usage() }
-if cmd == "--version" || cmd == "-v" || cmd == "version" { print(version); exit(0) }
-if cmd == "--help"    || cmd == "-h" || cmd == "help"    { usage() }
+if isVersionFlag(cmd) { print(version); exit(0) }
+if isHelpFlag(cmd)    { usage() }
 
 let semaphore = DispatchSemaphore(value: 0)
 

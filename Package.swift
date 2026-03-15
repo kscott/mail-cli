@@ -4,6 +4,9 @@ import PackageDescription
 let package = Package(
     name: "mail-cli",
     platforms: [.macOS(.v14)],
+    dependencies: [
+        .package(url: "https://github.com/kscott/get-clear", branch: "main"),
+    ],
     targets: [
         // Pure logic — no framework dependencies, fully testable
         .target(
@@ -13,7 +16,10 @@ let package = Package(
         // Main binary — depends on MailLib plus Contacts
         .executableTarget(
             name: "mail-bin",
-            dependencies: ["MailLib"],
+            dependencies: [
+                "MailLib",
+                .product(name: "GetClearKit", package: "get-clear"),
+            ],
             path: "Sources/MailCLI",
             linkerSettings: [
                 .linkedFramework("Contacts"),
