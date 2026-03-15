@@ -8,7 +8,17 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        run: swift run mail-tests
+
   build:
+    needs: test
     runs-on: macos-latest
 
     steps:
