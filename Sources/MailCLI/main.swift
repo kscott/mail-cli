@@ -4,10 +4,21 @@
 // Handles argument parsing, Keychain, JMAP, and Contacts interactions.
 // Matching and parsing logic delegated to MailLib for unit testing.
 
+import Darwin
 import Foundation
 import Contacts
 import Security
 import MailLib
+
+// MARK: - ANSI color
+
+private let ansiEnabled: Bool = {
+    ProcessInfo.processInfo.environment["NO_COLOR"] == nil &&
+    isatty(STDOUT_FILENO) != 0
+}()
+
+private func bold(_ s: String) -> String { ansiEnabled ? "\u{1B}[1m\(s)\u{1B}[0m" : s }
+private func dim(_ s: String)  -> String { ansiEnabled ? "\u{1B}[2m\(s)\u{1B}[0m" : s }
 
 let version = "1.0.0"
 let args    = Array(CommandLine.arguments.dropFirst())
@@ -579,10 +590,10 @@ func runSearch(query: String, token: String, session: JMAPSession) async throws 
         let subject  = email["subject"]    as? String ?? "(no subject)"
         let from     = (email["from"] as? [[String: Any]])?.first.map { formatAddr($0) } ?? ""
         let received = email["receivedAt"] as? String ?? ""
-        let idx      = String(i + 1).leftPad(3)
-        let dateStr  = formatEmailDate(received).leftPad(8)
-        let fromStr  = String(from.prefix(24)).padding(toLength: 24, withPad: " ", startingAt: 0)
-        print("  \(idx)  \(dateStr)  \(fromStr)  \(subject)")
+        let idx      = dim(String(i + 1).leftPad(3))
+        let dateStr  = dim(formatEmailDate(received).leftPad(8))
+        let fromStr  = dim(String(from.prefix(24)).padding(toLength: 24, withPad: " ", startingAt: 0))
+        print("  \(idx)  \(dateStr)  \(fromStr)  \(bold(subject))")
     }
 }
 
