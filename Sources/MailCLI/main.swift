@@ -548,6 +548,10 @@ func runSend(sendArgs: [String], contactStore: CNContactStore) async throws {
     var summary = "Sent to \(toAddrs.map { $0.formatted }.joined(separator: ", "))"
     if !ccAddrs.isEmpty    { summary += "; cc \(ccAddrs.map { $0.formatted }.joined(separator: ", "))" }
     if !msg.subject.isEmpty { summary += " — \(msg.subject)" }
+    let logDesc = msg.subject.isEmpty
+        ? toAddrs.map { $0.formatted }.joined(separator: ", ")
+        : "\(toAddrs.map { $0.formatted }.joined(separator: ", ")) Re: \(msg.subject)"
+    try? ActivityLog.write(tool: "mail", cmd: "send", desc: logDesc, container: nil)
     print(summary)
 }
 

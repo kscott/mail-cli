@@ -5,7 +5,7 @@ let package = Package(
     name: "mail-cli",
     platforms: [.macOS(.v14)],
     dependencies: [
-        .package(url: "https://github.com/kscott/get-clear", branch: "main"),
+        .package(path: "../get-clear"),
     ],
     targets: [
         // Pure logic — no framework dependencies, fully testable
