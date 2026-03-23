@@ -10,7 +10,7 @@ import Security
 import MailLib
 import GetClearKit
 
-let version = "1.0.0"
+let version = builtVersion
 let args    = Array(CommandLine.arguments.dropFirst())
 
 func usage() -> Never {
