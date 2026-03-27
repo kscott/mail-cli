@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "get-clear",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kscott/get-clear.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "559eda2120f07ede150d760cd7da6dbc3279cec8"
+      }
+    }
+  ],
+  "version" : 2
+}
