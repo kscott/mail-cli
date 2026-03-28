@@ -75,3 +75,16 @@ public func resolveRecipients(
 
     return []
 }
+
+/// Resolve to and cc fields for a send operation.
+/// Both fields use the same resolution logic — this makes that contract explicit and testable.
+public func buildRecipients(
+    to:       String,
+    cc:       [String],
+    groups:   [String: [AddressEntry]],
+    contacts: [MailContact]
+) -> (to: [AddressEntry], cc: [AddressEntry]) {
+    let toAddrs = resolveRecipients(to, groups: groups, contacts: contacts)
+    let ccAddrs = cc.flatMap { resolveRecipients($0, groups: groups, contacts: contacts) }
+    return (to: toAddrs, cc: ccAddrs)
+}

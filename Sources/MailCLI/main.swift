@@ -433,10 +433,8 @@ func runSend(sendArgs: [String], contactStore: CNContactStore) async throws {
     let contacts = loadContacts(from: contactStore)
     let groups   = loadGroups(from: contactStore)
 
-    let toAddrs = resolveRecipients(msg.to, groups: groups, contacts: contacts)
+    let (toAddrs, ccAddrs) = buildRecipients(to: msg.to, cc: msg.cc, groups: groups, contacts: contacts)
     guard !toAddrs.isEmpty else { fail("Could not resolve recipient: \(msg.to)") }
-
-    let ccAddrs = msg.cc.flatMap { resolveRecipients($0, groups: groups, contacts: contacts) }
 
     // Body: expand file path if given
     let bodyText: String

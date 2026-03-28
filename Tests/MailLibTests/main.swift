@@ -199,6 +199,36 @@ t.suite("resolveRecipients — contact with no email skipped") {
     t.expect("no result for contact without email",  r.isEmpty)
 }
 
+// MARK: - buildRecipients tests
+
+t.suite("buildRecipients — to non-primary email preserved") {
+    let (to, _) = buildRecipients(to: "alice@work.com", cc: [], groups: groups, contacts: allContacts)
+    t.expect("returns one to entry",      to.count == 1)
+    t.expect("exact to email preserved",  to.first?.email == "alice@work.com")
+    t.expect("to name resolved",          to.first?.name == "Alice Smith")
+}
+
+t.suite("buildRecipients — cc non-primary email preserved") {
+    let (_, cc) = buildRecipients(to: "bob", cc: ["alice@work.com"], groups: groups, contacts: allContacts)
+    t.expect("returns one cc entry",      cc.count == 1)
+    t.expect("exact cc email preserved",  cc.first?.email == "alice@work.com")
+    t.expect("cc name resolved",          cc.first?.name == "Alice Smith")
+}
+
+t.suite("buildRecipients — to and cc use identical resolution") {
+    let toResult = resolveRecipients("alice@work.com", groups: groups, contacts: allContacts)
+    let (_, cc)  = buildRecipients(to: "bob", cc: ["alice@work.com"], groups: groups, contacts: allContacts)
+    t.expect("cc resolves same as to",    cc == toResult)
+}
+
+t.suite("buildRecipients — multiple cc all resolved") {
+    let (_, cc) = buildRecipients(to: "bob", cc: ["alice@work.com", "cbrown@peanuts.com"],
+                                  groups: groups, contacts: allContacts)
+    t.expect("two cc entries",            cc.count == 2)
+    t.expect("first cc exact",            cc[0].email == "alice@work.com")
+    t.expect("second cc by contact",      cc[1].email == "cbrown@peanuts.com")
+}
+
 t.suite("AddressEntry — formatted") {
     let withName = AddressEntry(name: "Alice Smith", email: "alice@example.com")
     let noName   = AddressEntry(name: "",             email: "raw@example.com")
