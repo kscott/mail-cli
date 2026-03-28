@@ -34,8 +34,8 @@ public struct AddressEntry: Equatable {
 ///
 /// Resolution order:
 ///   1. Exact group name (case-insensitive) → all members
-///   2. Fuzzy contact match (name or email) → primary email
-///   3. Raw email address (contains @) → direct
+///   2. Raw email address (contains @) → direct
+///   3. Fuzzy contact match (name or email) → primary email
 ///   4. No match → empty array
 public func resolveRecipients(
     _ input: String,
@@ -50,7 +50,13 @@ public func resolveRecipients(
         return members
     }
 
-    // 2. Fuzzy contact match: exact name, prefix, contains, email contains
+    // 2. Raw email address — use exactly as given, look up name from contacts
+    if q.contains("@") {
+        let name = contacts.first(where: { $0.emails.contains(where: { $0.caseInsensitiveCompare(q) == .orderedSame }) })?.name ?? ""
+        return [AddressEntry(name: name, email: q)]
+    }
+
+    // 3. Fuzzy contact match: exact name, prefix, contains, email contains
     func score(_ c: MailContact) -> Int? {
         let name = c.name.lowercased()
         if name == ql                                           { return 0 }
@@ -65,11 +71,6 @@ public func resolveRecipients(
         .map { $0.0 }
     if let first = matched.first, let email = first.emails.first {
         return [AddressEntry(name: first.name, email: email)]
-    }
-
-    // 3. Raw email address
-    if q.contains("@") {
-        return [AddressEntry(name: "", email: q)]
     }
 
     return []

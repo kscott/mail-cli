@@ -133,7 +133,7 @@ t.suite("parseSendArgs — only keywords, no to") {
 
 // MARK: - resolveRecipients tests
 
-let alice   = MailContact(name: "Alice Smith",   emails: ["alice@example.com"])
+let alice   = MailContact(name: "Alice Smith",   emails: ["alice@example.com", "alice@work.com"])
 let bob     = MailContact(name: "Bob Jones",     emails: ["bob@jones.org"])
 let charlie = MailContact(name: "Charlie Brown", emails: ["cbrown@peanuts.com"])
 let noEmail = MailContact(name: "Dana White",    emails: [])
@@ -179,6 +179,14 @@ t.suite("resolveRecipients — raw email address") {
     t.expect("returns raw email entry",  r.count == 1)
     t.expect("email is set",             r.first?.email == "new@person.com")
     t.expect("name is empty",            r.first?.name == "")
+}
+
+t.suite("resolveRecipients — non-primary email uses exact address") {
+    // alice@work.com is Alice's second email; should not fall back to alice@example.com
+    let r = resolveRecipients("alice@work.com", groups: groups, contacts: allContacts)
+    t.expect("returns one entry",        r.count == 1)
+    t.expect("exact email preserved",    r.first?.email == "alice@work.com")
+    t.expect("name resolved from contact", r.first?.name == "Alice Smith")
 }
 
 t.suite("resolveRecipients — no match") {
