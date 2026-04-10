@@ -11,11 +11,12 @@ import MailLib
 import GetClearKit
 
 let version = builtVersion
+let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
 let args    = Array(CommandLine.arguments.dropFirst())
 
 func usage() -> Never {
     print("""
-    mail \(version) — CLI for Fastmail via JMAP
+    mail \(versionString) — CLI for Fastmail via JMAP
 
     Usage:
       mail setup [token]                   # Store JMAP token, discover identities
@@ -596,7 +597,7 @@ extension String {
 // MARK: - Dispatch
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(version); exit(0) }
+if case .version = dispatch { print(versionString); exit(0) }
 guard case .command(let cmd, let args) = dispatch else { usage() }
 
 let semaphore = DispatchSemaphore(value: 0)
