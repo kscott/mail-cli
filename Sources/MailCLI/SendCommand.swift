@@ -26,12 +26,10 @@ private func loadContacts(from store: CNContactStore) -> [MailContact] {
 
 private func loadGroups(from store: CNContactStore) -> [String: [AddressEntry]] {
     let groups = (try? store.groups(matching: nil)) ?? []
-    let keys   = [CNContactGivenNameKey, CNContactFamilyNameKey,
-                  CNContactEmailAddressesKey] as [CNKeyDescriptor]
     var result: [String: [AddressEntry]] = [:]
     for group in groups {
         let pred    = CNContact.predicateForContactsInGroup(withIdentifier: group.identifier)
-        let members = (try? store.unifiedContacts(matching: pred, keysToFetch: keys)) ?? []
+        let members = (try? store.unifiedContacts(matching: pred, keysToFetch: contactKeys)) ?? []
         let addrs: [AddressEntry] = members.compactMap { c in
             guard let email = c.emailAddresses.first?.value as String? else { return nil }
             let name = [c.givenName, c.familyName].filter { !$0.isEmpty }.joined(separator: " ")
@@ -55,11 +53,12 @@ func handleSend(args: [String]) async throws {
     }
     guard granted else { fail("Contacts access denied") }
 
-    let token   = try loadToken()
-    let config  = try loadConfig()
-    let client  = try await JMAPClient.connect(token: token)
+    let token  = try loadToken()
+    let config = try loadConfig()
+    async let clientTask = JMAPClient.connect(token: token)
     let contacts = loadContacts(from: contactStore)
     let groups   = loadGroups(from: contactStore)
+    let client   = try await clientTask
 
     let result = try await runSend(args: sendArgs, config: config, client: client,
                                    contacts: contacts, groups: groups)

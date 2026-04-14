@@ -7,8 +7,7 @@ import Foundation
 import MailLib
 import GetClearKit
 
-let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
-let args          = Array(CommandLine.arguments.dropFirst())
+let args = Array(CommandLine.arguments.dropFirst())
 
 let dispatch = parseArgs(args)
 if case .version = dispatch { print(versionString); exit(0) }

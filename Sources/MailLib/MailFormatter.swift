@@ -4,12 +4,24 @@
 
 import Foundation
 
-public func formatDate(_ iso: String) -> String {
+private let isoFractionalFormatter: ISO8601DateFormatter = {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    var date = f.date(from: iso)
-    if date == nil { f.formatOptions = [.withInternetDateTime]; date = f.date(from: iso) }
-    guard let date else { return iso }
+    return f
+}()
+
+private let isoBasicFormatter: ISO8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime]
+    return f
+}()
+
+private func parseISO8601(_ iso: String) -> Date? {
+    isoFractionalFormatter.date(from: iso) ?? isoBasicFormatter.date(from: iso)
+}
+
+public func formatDate(_ iso: String) -> String {
+    guard let date = parseISO8601(iso) else { return iso }
 
     let cal = Calendar.current
     let now = Date()
@@ -27,11 +39,7 @@ public func formatDate(_ iso: String) -> String {
 }
 
 public func formatDateLong(_ iso: String) -> String {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    var date = f.date(from: iso)
-    if date == nil { f.formatOptions = [.withInternetDateTime]; date = f.date(from: iso) }
-    guard let date else { return iso }
+    guard let date = parseISO8601(iso) else { return iso }
     let df = DateFormatter(); df.dateStyle = .full; df.timeStyle = .short
     return df.string(from: date)
 }

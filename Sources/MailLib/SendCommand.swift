@@ -41,8 +41,10 @@ public func runSend(
     }
 
     let bodyText: String
-    if !msg.body.isEmpty && FileManager.default.fileExists(atPath: msg.body) {
-        bodyText = (try? String(contentsOfFile: msg.body)) ?? msg.body
+    if !msg.body.isEmpty,
+       let data = FileManager.default.contents(atPath: msg.body),
+       let content = String(data: data, encoding: .utf8) {
+        bodyText = content
     } else {
         bodyText = msg.body
     }
@@ -56,11 +58,13 @@ public func runSend(
                                   "disposition": "attachment"])
     }
 
-    // Resolve Drafts and Sent mailboxes
-    guard let draftsId = try await client.findMailboxId(role: "drafts") else {
+    // Resolve Drafts and Sent mailboxes in parallel
+    async let draftsResult = client.findMailboxId(role: "drafts")
+    async let sentResult   = client.findMailboxId(role: "sent")
+    guard let draftsId = try await draftsResult else {
         throw MailError.jmapError("Could not find Drafts mailbox")
     }
-    guard let sentId = try await client.findMailboxId(role: "sent") else {
+    guard let sentId = try await sentResult else {
         throw MailError.jmapError("Could not find Sent mailbox")
     }
 
