@@ -1,3 +1,7 @@
+> **This repository has been archived.** This tool has been merged into [kscott/get-clear](https://github.com/kscott/get-clear). Issues, history, and active development have moved there.
+
+---
+
 # mail-cli
 
 Send email from the terminal via Fastmail's JMAP API. Fire and forget.
